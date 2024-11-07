@@ -1,30 +1,29 @@
-import { BranchStateMachine } from "../fsm/BranchStateMachine";
-import { CallEvent } from '../events/CallEvent';
+import {BranchStateType, BranchState} from "../valueObjects/BranchState";
+import {BranchNumber} from "../valueObjects/BranchNumber";
 
-export class Branch {
-  private number: string;
-  private stateMachine: BranchStateMachine;
-  private events: CallEvent[] = [];
+export default class Branch {
+    private readonly branchNumber: BranchNumber;
+    // @TO-DO O estado inicial deve ser pego no banco, mas como agora é apenas checar, será feito o branch_number
+    private state: BranchState = new BranchState(BranchStateType.LOGGED_IN);
+    public historiesStates: BranchState[] = [ ];
 
-
-  constructor(number: string) {
-    this.number = number;
-    this.stateMachine = new BranchStateMachine(number);
-  }
-
-  handleEvent(event: CallEvent): void {
-    event.validateParameters();
-
-    if (this.events.length > 0) {
-      const previousEvent = this.events[this.events.length - 1];
-      previousEvent.validateNextEvent(event);
+    constructor(branchNumber: string) {
+        this.branchNumber = new BranchNumber(branchNumber);
     }
 
-    this.events.push(event);
-    event.applyFsmTransition(null, this.stateMachine);
-  }
+    applyStateTransition(nextStateType: BranchStateType) {
+        this.state.canTransitionTo(nextStateType);
 
-  getCurrentState(): string {
-    return this.stateMachine.getState();
-  }
+        const nextState = new BranchState(nextStateType);
+        this.historiesStates.push(nextState);
+        this.state = nextState;
+    }
+
+    getState(): string {
+        return this.state.getValue()
+    }
+
+    getBranchNumber() {
+        return this.branchNumber.getValue();
+    }
 }
